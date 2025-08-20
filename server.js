@@ -34,6 +34,7 @@ mongoose.connection.once("open", () => {
 
 // Models
 import { Legislator } from "./models/legislator.js";
+import STATES from "./resources/states.js";
 
 let users = [
   { id: 1, name: "Alice" },
@@ -67,10 +68,17 @@ app.get("/users/:id", (req, res) => {
 // GET all legislators
 app.get("/legislators", async (req, res) => {
   try {
-    const legislators = await Legislator.find({}).sort({ lastName: 1, firstName: 1 });
+    const { state } = req.query;
+    const filter = state && state !== "All" ? { homeState: state } : {};
+    const legislators = await Legislator.find(filter).sort({ lastName: 1, firstName: 1 });
     res.json(legislators);
   } catch (error) {
     console.error("Failed to fetch legislators:", error);
     res.status(500).json({ message: "Failed to fetch legislators" });
   }
+});
+
+// GET canonical list of 50 US states
+app.get("/states", (req, res) => {
+  res.json(STATES);
 });

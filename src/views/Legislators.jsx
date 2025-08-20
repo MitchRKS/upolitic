@@ -2,14 +2,34 @@ import { useEffect, useState } from 'react'
 
 export default function Legislators() {
   const [legislators, setLegislators] = useState([])
+  const [states, setStates] = useState(['All'])
+  const [selectedState, setSelectedState] = useState('All')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
   useEffect(() => {
-    async function load() {
+    async function loadStates() {
+      try {
+        const res = await fetch('http://localhost:3000/states')
+        if (!res.ok) throw new Error('Failed to fetch states')
+        const data = await res.json()
+        setStates(['All', ...data])
+      } catch (err) {
+        setStates(['All'])
+      }
+    }
+    loadStates()
+  }, [])
+
+  useEffect(() => {
+    async function loadLegislators() {
       try {
         setLoading(true)
-        const response = await fetch('http://localhost:3000/legislators')
+        const url = new URL('http://localhost:3000/legislators')
+        if (selectedState && selectedState !== 'All') {
+          url.searchParams.set('state', selectedState)
+        }
+        const response = await fetch(url)
         if (!response.ok) throw new Error('Failed to fetch legislators')
         const data = await response.json()
         setLegislators(data)
@@ -19,8 +39,8 @@ export default function Legislators() {
         setLoading(false)
       }
     }
-    load()
-  }, [])
+    loadLegislators()
+  }, [selectedState])
 
   if (loading) return <p>Loading legislators…</p>
   if (error) return <p style={{ color: 'red' }}>{error}</p>
@@ -28,6 +48,18 @@ export default function Legislators() {
   return (
     <div style={{ padding: 16 }}>
       <h2>Legislators</h2>
+      <div style={{ marginBottom: 12 }}>
+        <label htmlFor="state-filter" style={{ marginRight: 8 }}>State:</label>
+        <select
+          id="state-filter"
+          value={selectedState}
+          onChange={(e) => setSelectedState(e.target.value)}
+        >
+          {states.map((s) => (
+            <option key={s} value={s}>{s}</option>
+          ))}
+        </select>
+      </div>
       {legislators.length === 0 ? (
         <p>No legislators found.</p>
       ) : (
@@ -43,7 +75,7 @@ export default function Legislators() {
                 {l.firstName} {l.lastName}
               </div>
               <div style={{ fontSize: 14, color: '#555' }}>
-                {l.chamber} • {l.partyAffiliation} • {l.homeState}{typeof l.district === 'number' ? `-${l.district}` : ''}
+                {[l.homeState, l.chamber, (typeof l.district === 'number' ? `District ${l.district}` : null), l.partyAffiliation].filter(Boolean).join(' • ')}
               </div>
             </li>
           ))}
