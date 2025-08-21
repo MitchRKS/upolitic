@@ -4,6 +4,7 @@ export default function Legislators() {
   const [legislators, setLegislators] = useState([])
   const [states, setStates] = useState(['All'])
   const [selectedState, setSelectedState] = useState('All')
+  const [sortBy, setSortBy] = useState('lastName') // 'lastName' or 'district'
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
@@ -42,6 +43,19 @@ export default function Legislators() {
     loadLegislators()
   }, [selectedState])
 
+  // Sort legislators based on selected sort option
+  const sortedLegislators = [...legislators].sort((a, b) => {
+    if (sortBy === 'lastName') {
+      return a.lastName.localeCompare(b.lastName)
+    } else if (sortBy === 'district') {
+      // Handle cases where district might be null/undefined
+      const aDistrict = a.district || 0
+      const bDistrict = b.district || 0
+      return aDistrict - bDistrict
+    }
+    return 0
+  })
+
   if (loading) return <p>Loading legislators…</p>
   if (error) return <p style={{ color: 'red' }}>{error}</p>
 
@@ -59,12 +73,26 @@ export default function Legislators() {
             <option key={s} value={s}>{s}</option>
           ))}
         </select>
+        
+        {selectedState !== 'All' && (
+          <div style={{ marginTop: 8 }}>
+            <label htmlFor="sort-filter" style={{ marginRight: 8 }}>Sort by:</label>
+            <select
+              id="sort-filter"
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+            >
+              <option value="lastName">Last Name (A-Z)</option>
+              <option value="district">District Number</option>
+            </select>
+          </div>
+        )}
       </div>
-      {legislators.length === 0 ? (
+      {sortedLegislators.length === 0 ? (
         <p>No legislators found.</p>
       ) : (
         <ul style={{ listStyle: 'none', padding: 0 }}>
-          {legislators.map((l) => (
+          {sortedLegislators.map((l) => (
             <li key={l._id} style={{
               border: '1px solid #ddd',
               borderRadius: 8,
